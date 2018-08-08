@@ -15,7 +15,15 @@ Automatically download OSU! beatmaps from CloudMusic playlists.
 python main.py
 ```
 
+# 依赖
+
+- pyyaml
+- requests
+- langid
+- pycrypto
+
 # Cookie
+
 若程序请求Cookie，请参照如下步骤：
 
 1.启动Chrome，打开血猫网站，按下F12打开开发者选项，切换到Network选项卡

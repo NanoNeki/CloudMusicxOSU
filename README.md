@@ -6,7 +6,9 @@ Automatically download OSU! beatmaps from CloudMusic playlists.
 网易云音乐API部分来自https://github.com/rextw-priv/CloudMusicAPI_OS ，已按协议要求完整保留原协议。
 
 # 食用方法
-目前只支持英文歌曲，对日语歌曲的处理涉及罗马音分词，我暂时无能为力。
+~~目前只支持英文歌曲，对日语歌曲的处理涉及罗马音分词，我暂时无能为力。~~ 
+
+已添加对日语歌曲的有限支持（模糊匹配），有待测试
 
 执行如下代码即可食用：
 ```

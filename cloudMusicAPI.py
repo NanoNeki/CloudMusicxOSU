@@ -64,7 +64,7 @@ def rsaEncrypt(text):
   rs = pow(int(text.encode('hex'), 16), e, n)
   return format(rs, 'x').zfill(256)
 
-print("生成通信密钥...")
+print("Generating secretKey for current session...")
 secretKey = createSecretKey(16)
 encSecKey = rsaEncrypt(secretKey)
 

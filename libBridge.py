@@ -2,6 +2,8 @@
 import cloudMusicAPI
 import json
 import requests
+import langid
+import difflib
 
 urlBloodCatQuery_Base = "https://bloodcat.com/osu/?mod=json&q="
 urlBloodCatDload_Base = "https://bloodcat.com/osu/s/"
@@ -35,6 +37,9 @@ def setHeaders():
 
 # 获取一个罗马音转换器
 def getConverter():
+    import sys  # reload()之前必须要引入模块
+    reload(sys)
+    sys.setdefaultencoding('utf-8') # 防止UTF8出问题
     from pykakasi import kakasi
     kakasi = kakasi()
     kakasi.setMode('H', 'a')
@@ -68,16 +73,39 @@ def retrieveSongFromID(__songID,workMode = 0): # Unconverted
     r = requests.get(url)
     __dictResult = json.loads(r.content)
     __matchSongID = []
+    conv = getConverter()
+    if langid.classify(targetSongName)[0] == 'ja':
+        flagJapanese = 1
+        parsedTargetTitle = str(conv.do(targetSongName)).replace("-","")
+        # print "Japanese found!" # for debug purposes
+    else:
+        parsedTargetTitle = targetSongName
+        flagJapanese = 0
+    #FINISHED:去掉罗马音里的空格来进行歌名比对，使用长度进行验证
     for __eachSong in __dictResult:
         # print_gbk eachSong['title']
-        if __eachSong['title'] == targetSongName:
-            print_gbk("找到匹配：")
-            print_gbk(__eachSong['title']),
-            print_gbk("艺术家："),
-            print_gbk(__eachSong['artist'])
-            __matchSongID.append(int(__eachSong['id'].decode('utf-8')))
-            if workMode == 0:
-                break
+        if flagJapanese == 0:
+            if __eachSong['title'] == parsedTargetTitle:
+                print_gbk("找到匹配：")
+                print_gbk(__eachSong['title']),
+                print_gbk("艺术家："),
+                print_gbk(__eachSong['artist'])
+                __matchSongID.append(int(__eachSong['id'].decode('utf-8')))
+                if workMode == 0:
+                    break
+        elif flagJapanese == 1:
+            # 我们在这里有： - parsedTargetTitle 处理后的全小写罗马音，来自网易云
+            #              - __eachSong['title']，来自血猫
+            prettifiedResultName = str(__eachSong['title']).lower().replace(" ","") # 移除空格和大写
+            seq = difflib.SequenceMatcher(None,prettifiedResultName,parsedTargetTitle)
+            if seq.ratio() >= 0.5:
+                print_gbk("找到匹配：")
+                print_gbk(__eachSong['title']),
+                print_gbk("艺术家："),
+                print_gbk(__eachSong['artist'])
+                __matchSongID.append(int(__eachSong['id'].decode('utf-8')))
+                if workMode == 0:
+                    break
     print_gbk("匹配到的谱面ID：" + str(__matchSongID))
     return __matchSongID
 

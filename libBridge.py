@@ -5,11 +5,13 @@ import requests
 import langid
 import difflib
 
+debugFlag = 0
+debugObject = ""
 urlBloodCatQuery_Base = "https://bloodcat.com/osu/?mod=json&q="
 urlBloodCatDload_Base = "https://bloodcat.com/osu/s/"
 urlCloudMusicPlaylist_Base = "http://music.163.com/api/playlist/detail?id="
 fileName_Base = ".osz"
-strCookie = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1MzM2OTAzNjcsImlwIjoiMTgyLjIwMC4xMjkuMTQzIiwidWEiOjI2ODkyMTg5OTh9.taD8Ftb0H7_pfdK9OP5uVdXjpBgz3IxxZxki0UAvZUE"
+strCookie = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1MzM3MjY4MTcsImlwIjoiMTgyLjIwMC4xMjkuMTQzIiwidWEiOjMzNjIwMTI5NTd9.i3yHwOSgkxLeh3dVSxkwNKbTVygnA8sYAU1Z7hyMHaM"
 # Override print() for CMD users
 def print_gbk(str):
     print(str.decode("utf-8").encode("gbk"))
@@ -30,7 +32,7 @@ def getCookie(op = 0):
 def setHeaders():
     cookie = getCookie()
     __headers = {
-        'user-agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36',
+        'user-agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.84 Safari/537.36',
         'referer': 'https://bloodcat.com/osu',
         'cookie': cookie}
     return __headers
@@ -60,6 +62,12 @@ def dloadFile(url,fileName,headers = {}):
         file.close()
         return 0
     else:
+        # 调试代码
+        if debugFlag == 1:
+            global debugObject
+            debugObject = r
+            return 0
+        # 调试代码
         print_gbk("下载失败，请检查Cookie！")
         getCookie(-1)
         return -1
@@ -77,13 +85,14 @@ def retrieveSongFromID(__songID,workMode = 0): # Unconverted
     if langid.classify(targetSongName)[0] == 'ja':
         flagJapanese = 1
         parsedTargetTitle = str(conv.do(targetSongName)).replace("-","")
+        # print(parsedTargetTitle)
         # print "Japanese found!" # for debug purposes
     else:
         parsedTargetTitle = targetSongName
         flagJapanese = 0
     #FINISHED:去掉罗马音里的空格来进行歌名比对，使用长度进行验证
     for __eachSong in __dictResult:
-        # print_gbk eachSong['title']
+        # print_gbk(__eachSong['title'])
         if flagJapanese == 0:
             if __eachSong['title'] == parsedTargetTitle:
                 print_gbk("找到匹配：")
@@ -112,7 +121,9 @@ def retrieveSongFromID(__songID,workMode = 0): # Unconverted
 # 从网易云歌单获取歌曲名字，返回歌曲名字(unicode,list)
 def retrieveNameFromPlaylist(__playlistID):
     url = urlCloudMusicPlaylist_Base + str(__playlistID)
-    headers = {'user-agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36'}
+    headers = {'user-agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.84 Safari/537.36'}
+    print_gbk("如果歌单曲目较多（超过500首），可能需要较长时间获取，请耐心等待...")
+    print_gbk("出现Connnection Broken错误即为网络不稳定，可以多试几次")
     r = requests.get(url,headers = headers)
     __dictResult = json.loads(r.content)
     print_gbk ("歌单名称："),
@@ -127,7 +138,9 @@ def retrieveNameFromPlaylist(__playlistID):
 # 从网易云歌单获取歌曲ID，返回歌曲ID(int,list)
 def retrieveIDFromPlaylist(__playlistID):
     url = urlCloudMusicPlaylist_Base + str(__playlistID)
-    headers = {'user-agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36'}
+    headers = {'user-agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.84 Safari/537.36'}
+    print_gbk("如果歌单曲目较多（超过500首），可能需要较长时间获取，请耐心等待...")
+    print_gbk("出现Connnection Broken错误即为网络不稳定，可以多试几次")
     r = requests.get(url,headers = headers)
     __dictResult = json.loads(r.content)
     print_gbk ("歌单名称："),

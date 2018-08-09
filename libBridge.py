@@ -127,13 +127,21 @@ def retrieveSongFromID(__songID,workMode = 0): # Unconverted
     targetSongDetail = cloudMusicAPI.req_netease_detail(__songID)
     targetSongName = targetSongDetail['name']
     url = urlBloodCatQuery_Base + targetSongName + "&c=b&p=1&s=&m=&g=&l="
-    r = requests.get(url)
+
+    try:
+        r = requests.get(url)
+    except:
+        print_gbk("网络错误，通常重试一下就可以解决，程序即将退出...")
+        os.system('pause')
+        r = '' # 我恨死语法检查了
+
     try:
         __dictResult = json.loads(r.content)
     except ValueError:
         print_gbk("网络错误，通常重试一下就可以解决，程序即将退出...")
         os.system('pause')
         __dictResult = {} # 我恨死语法检查了
+
     __matchSongID = []
     conv = getConverter()
     if langid.classify(targetSongName)[0] == 'ja':
@@ -176,6 +184,7 @@ def retrieveSongFromID(__songID,workMode = 0): # Unconverted
     return __matchSongID
 
 # 从网易云歌单获取歌曲名字，返回歌曲名字(unicode,list)
+# Deprecated function!!!! Don't use!!!!
 def retrieveNameFromPlaylist(__playlistID):
     url = urlCloudMusicPlaylist_Base + str(__playlistID)
     headers = {'user-agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.84 Safari/537.36'}

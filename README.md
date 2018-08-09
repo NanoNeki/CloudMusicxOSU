@@ -10,10 +10,23 @@ Automatically download OSU! beatmaps from CloudMusic playlists.
 
 已添加对日语歌曲的有限支持（模糊匹配），有待测试
 
-执行如下代码即可食用：
+在使用之前，请先确保安装了Python运行库，并确保安装相关依赖。
+
+在文件所在目录按住Shift点击空白处，选择（在此处打开命令窗口），
+
+并执行如下代码即可食用：
 ```
 python main.py
 ```
+
+然而，更推荐的食用方式是：
+
+```
+python
+import main
+```
+
+鉴于层出不穷的兼容性问题，我已经放弃打包成单文件Release，请到此页面右方"Clone or Download"自行下载源码包。
 
 # 依赖
 
@@ -21,10 +34,11 @@ python main.py
 - requests
 - langid
 - pycrypto
+- pykakasi
 
-# Cookie
+# Cookie和UA
 
-若程序请求Cookie，请参照如下步骤：
+若程序请求Cookie和UA，请参照如下步骤：
 
 1.启动Chrome，打开血猫网站，按下F12打开开发者选项，切换到Network选项卡
 
@@ -34,7 +48,7 @@ python main.py
 
 ![image](https://github.com/NanoNeki/CloudMusicxOSU/blob/master/tutorial.png)
 
-（从obm_human=后面到分号为止）
+（从obm_human=后面到分号为止为Cookie，下边的红框内容是UA）
 
 粘贴进程序即可使用。
 

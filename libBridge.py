@@ -92,7 +92,7 @@ def refreshSession():
     sessionBloodCat.headers.update(setHeaders())
 
 # 通用下载接口 返回-1会强制触发cookie检查
-def dloadFile(url,fileName = '',headers = {}):
+def dloadFile(url,fileName = '',headers = {},canSkip = 1):
     print_gbk ("准备下载：" + url)
     # FINISHED:复用连接并加入重试
     # r = requests.get(url,headers=headers)
@@ -107,21 +107,25 @@ def dloadFile(url,fileName = '',headers = {}):
 
     except:
         print_gbk("下载出错，正在重试.....")
-        return -1 # -1 for network error
+        return -1 # -1 for "Please Retry!!!"
     if r.status_code == 200:
         if fileName != '':
             fileName = fileName
         else :
             fileName = r.headers['Content-Disposition'].split('"')[1]
-        if os.path.exists(fileName):
+        if os.path.exists(fileName) and canSkip == 1:
             print_gbk("文件已存在，跳过：" + fileName)
             print ("==============================================")
             return 0
         print_gbk("正在写入文件：" + fileName)
         file = open(fileName, 'wb')
-        for chunk in r.iter_content(100000):
-            file.write(chunk)
-        file.close()
+        try:
+            for chunk in r.iter_content(100000):
+               file.write(chunk)
+            file.close()
+        except:
+            print_gbk("罕见的I/O错误...正在重试")
+            return -1
         print ("==============================================")
         return 0
     else:
@@ -239,8 +243,8 @@ def retrieveIDFromPlaylist(__playlistID):
     print_gbk("如果歌单曲目较多（超过500首），可能需要较长时间获取，请耐心等待...")
     print_gbk("出现Connection Broken错误即为网络不稳定，可以多试几次")
 
-    while dloadFile(url,'nowWorkingOn.list',headers) == -1:
-        dloadFile(url, 'nowWorkingOn.list', headers)
+    while dloadFile(url,'nowWorkingOn.list',headers,0) == -1:
+        dloadFile(url, 'nowWorkingOn.list', headers,0)
 
     f = open('nowWorkingOn.list','r')
     __content = f.read()

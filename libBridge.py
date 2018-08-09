@@ -110,21 +110,23 @@ def dloadFile(url,fileName = '',headers = {},canSkip = 1):
         return -1 # -1 for "Please Retry!!!"
     if r.status_code == 200:
         if fileName != '':
-            fileName = fileName
+            __fileName = fileName
         else :
-            fileName = r.headers['Content-Disposition'].split('"')[1]
-        if os.path.exists(fileName) and canSkip == 1:
-            print_gbk("文件已存在，跳过：" + fileName)
+            __fileName = r.headers['Content-Disposition'].split('"')[1]
+        if os.path.exists(__fileName) and canSkip == 1:
+            print_gbk("文件已存在，跳过：" + __fileName)
             print ("==============================================")
             return 0
-        print_gbk("正在写入文件：" + fileName)
-        file = open(fileName, 'wb')
+        print_gbk("正在写入文件：" + __fileName)
+        file = open(__fileName, 'wb')
         try:
             for chunk in r.iter_content(100000):
                file.write(chunk)
             file.close()
         except:
             print_gbk("罕见的I/O错误...正在重试")
+            file.close()
+            os.remove(__fileName)
             return -1
         print ("==============================================")
         return 0
@@ -216,6 +218,7 @@ def retrieveSongFromID(__songID,workMode = 0): # Unconverted
         global nonFoundCount
         nonFoundCount = nonFoundCount + 1
         print_gbk("没有找到匹配！ x" + str(nonFoundCount))
+        print ("==============================================")
         return['success']
 
 # 从网易云歌单获取歌曲名字，返回歌曲名字(unicode,list)

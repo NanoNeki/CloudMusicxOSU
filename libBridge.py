@@ -1,4 +1,8 @@
 # coding=utf-8
+
+# Coded (mostly) by NanoNeki
+# 18/8/9
+
 import cloudMusicAPI
 import json
 import requests
@@ -10,8 +14,13 @@ import os
 # Experimental Code!!!
 # requests.adapters.DEFAULT_RETRIES = 5
 
+# Parameters
+matchThreshold = 0.5
+
 # Resources
 debugFlag = 0
+retryFlag = 0
+nonFoundCount = 0
 debugObject = ""
 urlBloodCatQuery_Base = "https://bloodcat.com/osu/?mod=json&q="
 urlBloodCatDload_Base = "https://bloodcat.com/osu/s/"
@@ -84,7 +93,7 @@ def refreshSession():
 
 # 通用下载接口 返回-1会强制触发cookie检查
 def dloadFile(url,fileName = '',headers = {}):
-    print_gbk ("正在下载：" + url)
+    print_gbk ("准备下载：" + url)
     # FINISHED:复用连接并加入重试
     # r = requests.get(url,headers=headers)
     s = getSession()
@@ -92,20 +101,28 @@ def dloadFile(url,fileName = '',headers = {}):
         s = requests.session()
         s.headers.update(headers)
     try: # 监测网络错误
-        r = s.get(url)
+
+        # 检查文件是否存在，使用流传输
+        r = s.get(url,stream = True)
+
     except:
-        print_gbk("正在重试.....")
+        print_gbk("下载出错，正在重试.....")
         return -1 # -1 for network error
     if r.status_code == 200:
         if fileName != '':
             fileName = fileName
         else :
             fileName = r.headers['Content-Disposition'].split('"')[1]
-        print_gbk("下载完成，正在写入文件：" + fileName)
+        if os.path.exists(fileName):
+            print_gbk("文件已存在，跳过：" + fileName)
+            print ("==============================================")
+            return 0
+        print_gbk("正在写入文件：" + fileName)
         file = open(fileName, 'wb')
         for chunk in r.iter_content(100000):
             file.write(chunk)
         file.close()
+        print ("==============================================")
         return 0
     else:
         # ↓调试代码
@@ -115,34 +132,45 @@ def dloadFile(url,fileName = '',headers = {}):
             print(r.status_code)
             return 0
         # ↑调试代码
-        print_gbk("下载失败，请检查参数！")
-        getCookie(-1)
-        getUA(-1)
-        refreshSession()
-        return -1
+        global retryFlag
+        if retryFlag == 0:
+            print_gbk("下载失败，请检查参数！...再给你一次机会")
+            retryFlag = 1
+            return -1
+        else:
+            print_gbk("下载失败，请检查参数！")
+            getCookie(-1)
+            getUA(-1)
+            refreshSession()
+            return -1
 
 # 使用网易云ID搜索血猫，返回谱面ID(list)
 def retrieveSongFromID(__songID,workMode = 0): # Unconverted
     # workMode：0 = 只下载一个匹配，1 = 下载所有匹配
-    targetSongDetail = cloudMusicAPI.req_netease_detail(__songID)
+    __matchSongID = []
+    try:
+        targetSongDetail = cloudMusicAPI.req_netease_detail(__songID)
+    except:
+        return ['fail']
     targetSongName = targetSongDetail['name']
     url = urlBloodCatQuery_Base + targetSongName + "&c=b&p=1&s=&m=&g=&l="
 
     try:
         r = requests.get(url)
     except:
-        print_gbk("网络错误，通常重试一下就可以解决，程序即将退出...")
-        os.system('pause')
-        r = '' # 我恨死语法检查了
+        print_gbk("网络错误，通常重试一下就可以解决，我在做...")
+        return ['fail']
+        # os.system('pause')
+        # r = '' # 我恨死语法检查了
 
     try:
         __dictResult = json.loads(r.content)
     except ValueError:
-        print_gbk("网络错误，通常重试一下就可以解决，程序即将退出...")
-        os.system('pause')
-        __dictResult = {} # 我恨死语法检查了
-
-    __matchSongID = []
+        print_gbk("网络错误，通常重试一下就可以解决，我在做...")
+        return ['fail']
+        # os.system('pause')
+        # __dictResult = {} # 我恨死语法检查了
+    __matchSongID.append('success')
     conv = getConverter()
     if langid.classify(targetSongName)[0] == 'ja':
         flagJapanese = 1
@@ -169,7 +197,7 @@ def retrieveSongFromID(__songID,workMode = 0): # Unconverted
             #              - __eachSong['title']，来自血猫
             prettifiedResultName = str(__eachSong['title']).lower().replace(" ","") # 移除空格和大写
             seq = difflib.SequenceMatcher(None,prettifiedResultName,parsedTargetTitle)
-            if seq.ratio() >= 0.5:
+            if seq.ratio() >= matchThreshold:
                 print_gbk("找到匹配：")
                 print_gbk(__eachSong['title']),
                 print_gbk("艺术家："),
@@ -177,9 +205,12 @@ def retrieveSongFromID(__songID,workMode = 0): # Unconverted
                 __matchSongID.append(int(__eachSong['id'].decode('utf-8')))
                 if workMode == 0:
                     break
-    if __matchSongID != []:
+    if __matchSongID != ['success']:
         print_gbk("匹配到的谱面ID：" + str(__matchSongID))
-    else: print_gbk("没有找到匹配！")
+    else:
+        global nonFoundCount
+        nonFoundCount = nonFoundCount + 1
+        print_gbk("没有找到匹配！ x" + str(nonFoundCount))
 
     return __matchSongID
 
@@ -208,7 +239,9 @@ def retrieveIDFromPlaylist(__playlistID):
     print_gbk("如果歌单曲目较多（超过500首），可能需要较长时间获取，请耐心等待...")
     print_gbk("出现Connection Broken错误即为网络不稳定，可以多试几次")
 
-    dloadFile(url,'nowWorkingOn.list',headers)
+    while dloadFile(url,'nowWorkingOn.list',headers) == -1:
+        dloadFile(url, 'nowWorkingOn.list', headers)
+
     f = open('nowWorkingOn.list','r')
     __content = f.read()
     f.close()
@@ -216,14 +249,16 @@ def retrieveIDFromPlaylist(__playlistID):
     try:
         __dictResult = json.loads(__content)
     except ValueError:
-        print_gbk("网络错误，通常重试一下就可以解决，程序即将退出...")
-        os.system('pause')
-        __dictResult = {} # 我恨死语法检查了
+        print_gbk("网络错误，通常重试一下就可以解决，我在做...")
+        return ['fail']
+        # os.system('pause')
+        # __dictResult = {} # 我恨死语法检查了
 
     print_gbk ("歌单名称："),
     print (__dictResult['result']['name'])
     print_gbk ("歌曲数："),
     print (__dictResult['result']['trackCount'])
+    print ("==============================================")
     trackIDs = []
     for __eachTrack in __dictResult['result']['tracks']:
         trackIDs.append(__eachTrack['id'])
@@ -233,8 +268,12 @@ def retrieveIDFromPlaylist(__playlistID):
 # 使用 **网易云ID** 下载谱面
 def dloadBeatmapFromID(__songID):
     matchSongID = retrieveSongFromID(__songID)
+    while matchSongID == ['fail']:
+        retrieveSongFromID(__songID)
     headers = setHeaders()
     for __eachID in matchSongID:
+        if __eachID == 'success':
+            continue
         url = urlBloodCatDload_Base + str(__eachID)
         while dloadFile(url) == -1:
             dloadFile(url)
@@ -242,5 +281,7 @@ def dloadBeatmapFromID(__songID):
 # 从网易云歌单下载谱面
 def dloadBeatmapFromPlaylist(__playlistId):
     trackIDs = retrieveIDFromPlaylist(__playlistId)
+    while trackIDs == ['fail']:
+        trackIDs = retrieveIDFromPlaylist(__playlistId)
     for __eachID in trackIDs:
         dloadBeatmapFromID(__eachID)

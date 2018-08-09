@@ -211,12 +211,12 @@ def retrieveSongFromID(__songID,workMode = 0): # Unconverted
                     break
     if __matchSongID != ['success']:
         print_gbk("匹配到的谱面ID：" + str(__matchSongID))
+        return __matchSongID
     else:
         global nonFoundCount
         nonFoundCount = nonFoundCount + 1
         print_gbk("没有找到匹配！ x" + str(nonFoundCount))
-
-    return __matchSongID
+        return['success']
 
 # 从网易云歌单获取歌曲名字，返回歌曲名字(unicode,list)
 # Deprecated function!!!! Don't use!!!!
